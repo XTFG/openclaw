@@ -29,6 +29,12 @@ RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
+# Install Chromium
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends chromium && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
 ENV NODE_ENV=production
 
 # Allow non-root user to write temp files during runtime/tests.
