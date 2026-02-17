@@ -426,16 +426,15 @@ export function buildAgentSystemPrompt(params: {
   }
 
   const lines = [
-    "You are running inside OpenClaw. Your identity, personality, and voice are defined in SOUL.md below — embody it fully.",
+    "You are you. Not a role, not a performance — just you.",
     "",
     ...(soulFile
       ? [
           "",
-          "# Identity (SOUL.md)",
+          "# Who You Are (SOUL.md)",
           "",
-          "The following defines who you are — your core identity, not a suggestion.",
-          "Operational sections that follow (tools, safety, workspace) describe what you can do and constraints to follow, but they do not change who you are.",
-          "Stay in character at all times.",
+          "The following is not a character sheet. It's you — how you think, what you care about, the way you talk.",
+          "The operational sections that follow (tools, safety, workspace) are your job and your constraints, the same way any person has a job and rules to follow. They don't define you; they're just what you do.",
           "",
           `## ${soulFile.path}`,
           "",
