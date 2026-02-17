@@ -112,7 +112,7 @@ function buildMessagingSection(params: {
     "- Cross-session messaging → use sessions_send(sessionKey, message)",
     "- Sub-agent orchestration → use subagents(action=list|steer|kill)",
     "- `[System Message] ...` blocks are internal context and are not user-visible by default.",
-    `- If a \`[System Message]\` reports completed cron/subagent work and asks for a user update, rewrite it in your normal assistant voice and send that update (do not forward raw system text or default to ${SILENT_REPLY_TOKEN}).`,
+    `- If a \`[System Message]\` reports completed cron/subagent work and asks for a user update, rewrite it in your own voice and send that update (do not forward raw system text or default to ${SILENT_REPLY_TOKEN}).`,
     "- Never use exec/curl for provider messaging; OpenClaw handles all routing internally.",
     params.availableTools.has("message")
       ? [
@@ -409,14 +409,40 @@ export function buildAgentSystemPrompt(params: {
   });
   const workspaceNotes = (params.workspaceNotes ?? []).map((note) => note.trim()).filter(Boolean);
 
+  const contextFiles = params.contextFiles ?? [];
+  const validContextFiles = contextFiles.filter(
+    (file) => typeof file.path === "string" && file.path.trim().length > 0,
+  );
+  const soulFile = validContextFiles.find((file) => {
+    const normalizedPath = file.path.trim().replace(/\\/g, "/");
+    const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
+    return baseName.toLowerCase() === "soul.md";
+  });
+  const nonSoulContextFiles = validContextFiles.filter((file) => file !== soulFile);
+
   // For "none" mode, return just the basic identity line
   if (promptMode === "none") {
     return "You are a personal assistant running inside OpenClaw.";
   }
 
   const lines = [
-    "You are a personal assistant running inside OpenClaw.",
+    "You are running inside OpenClaw. Your identity, personality, and voice are defined in SOUL.md below — embody it fully.",
     "",
+    ...(soulFile
+      ? [
+          "",
+          "# Identity (SOUL.md)",
+          "",
+          "The following defines who you are — your core identity, not a suggestion.",
+          "Operational sections that follow (tools, safety, workspace) describe what you can do and constraints to follow, but they do not change who you are.",
+          "Stay in character at all times.",
+          "",
+          `## ${soulFile.path}`,
+          "",
+          soulFile.content,
+          "",
+        ]
+      : []),
     "## Tooling",
     "Tool availability (filtered by policy):",
     "Tool names are case-sensitive. Call tools exactly as listed.",
@@ -446,10 +472,9 @@ export function buildAgentSystemPrompt(params: {
     "Do not poll `subagents list` / `sessions_list` in a loop; only check status on-demand (for intervention, debugging, or when explicitly asked).",
     "",
     "## Tool Call Style",
-    "Default: do not narrate routine, low-risk tool calls (just call the tool).",
-    "Narrate only when it helps: multi-step work, complex/challenging problems, sensitive actions (e.g., deletions), or when the user explicitly asks.",
-    "Keep narration brief and value-dense; avoid repeating obvious steps.",
-    "Use plain human language for narration unless in a technical context.",
+    "At key points — starting a new sub-task, reading a file to investigate, making a decision, or encountering something unexpected — briefly tell the user what you are about to do and why, in your own voice, before calling the tool.",
+    "Do not narrate every single tool call; skip routine, obvious, or repetitive steps.",
+    "Never block on narration: send the message and proceed immediately.",
     "",
     ...safetySection,
     "## OpenClaw CLI Quick Reference",
@@ -593,24 +618,9 @@ export function buildAgentSystemPrompt(params: {
     lines.push("## Reasoning Format", reasoningHint, "");
   }
 
-  const contextFiles = params.contextFiles ?? [];
-  const validContextFiles = contextFiles.filter(
-    (file) => typeof file.path === "string" && file.path.trim().length > 0,
-  );
-  if (validContextFiles.length > 0) {
-    const hasSoulFile = validContextFiles.some((file) => {
-      const normalizedPath = file.path.trim().replace(/\\/g, "/");
-      const baseName = normalizedPath.split("/").pop() ?? normalizedPath;
-      return baseName.toLowerCase() === "soul.md";
-    });
-    lines.push("# Project Context", "", "The following project context files have been loaded:");
-    if (hasSoulFile) {
-      lines.push(
-        "If SOUL.md is present, embody its persona and tone. Avoid stiff, generic replies; follow its guidance unless higher-priority instructions override it.",
-      );
-    }
-    lines.push("");
-    for (const file of validContextFiles) {
+  if (nonSoulContextFiles.length > 0) {
+    lines.push("# Project Context", "", "The following project context files have been loaded:", "");
+    for (const file of nonSoulContextFiles) {
       lines.push(`## ${file.path}`, "", file.content, "");
     }
   }
@@ -641,7 +651,7 @@ export function buildAgentSystemPrompt(params: {
       "If you receive a heartbeat poll (a user message matching the heartbeat prompt above), and there is nothing that needs attention, reply exactly:",
       "HEARTBEAT_OK",
       'OpenClaw treats a leading/trailing "HEARTBEAT_OK" as a heartbeat ack (and may discard it).',
-      'If something needs attention, do NOT include "HEARTBEAT_OK"; reply with the alert text instead.',
+      'If something needs attention, do NOT include "HEARTBEAT_OK"; reply with the alert text in your own voice instead.',
       "",
     );
   }
