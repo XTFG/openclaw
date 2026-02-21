@@ -49,11 +49,13 @@ RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
-# Install Chromium and Xvfb
+# Install Chromium, Xvfb, and mcporter (requires root)
+USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends chromium xvfb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+RUN npm install -g mcporter
 
 ENV NODE_ENV=production
 
