@@ -195,6 +195,8 @@ export const FIELD_HELP: Record<string, string> = {
     "Legacy/alternate hostname allowlist field used by SSRF policy consumers for explicit host exceptions. Use stable exact hostnames and avoid wildcard-like broad patterns.",
   "browser.remoteCdpTimeoutMs":
     "Timeout in milliseconds for connecting to a remote CDP endpoint before failing the browser attach attempt. Increase for high-latency tunnels, or lower for faster failure detection.",
+  "browser.extraArgs":
+    "Additional Chrome launch arguments appended at startup. Useful for stealth flags, window-size overrides, or custom user-agent strings. Example: [\"--window-size=1920,1080\", \"--disable-infobars\"].",
   "browser.remoteCdpHandshakeTimeoutMs":
     "Timeout in milliseconds for post-connect CDP handshake readiness checks against remote browser targets. Raise this for slow-start remote browsers and lower to fail fast in automation loops.",
   "discovery.mdns.mode":
