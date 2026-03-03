@@ -41,10 +41,7 @@ describe("config plugin validation", () => {
     OPENCLAW_PLUGIN_MANIFEST_CACHE_MS: process.env.OPENCLAW_PLUGIN_MANIFEST_CACHE_MS,
   };
 
-  const validateInSuite = (raw: unknown) => {
-    process.env.OPENCLAW_STATE_DIR = path.join(suiteHome, ".openclaw");
-    return validateConfigObjectWithPlugins(raw);
-  };
+  const validateInSuite = (raw: unknown) => validateConfigObjectWithPlugins(raw);
 
   beforeAll(async () => {
     fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-plugin-validation-"));
@@ -70,8 +67,17 @@ describe("config plugin validation", () => {
       channels: ["bluebubbles"],
       schema: { type: "object" },
     });
+    process.env.OPENCLAW_STATE_DIR = path.join(suiteHome, ".openclaw");
     process.env.OPENCLAW_PLUGIN_MANIFEST_CACHE_MS = "10000";
     clearPluginManifestRegistryCache();
+    // Warm the plugin manifest cache once so path-based validations can reuse
+    // parsed manifests across test cases.
+    validateInSuite({
+      plugins: {
+        enabled: false,
+        load: { paths: [badPluginDir, bluebubblesPluginDir] },
+      },
+    });
   });
 
   afterAll(async () => {
